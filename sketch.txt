@@ -1,0 +1,44 @@
+1. chat service (encrypted), backend will be hosted on pythonanywhere, frontend could be python or c++
+ - encryption of message? look into some 2 way encryption algortihm like the one whatsapp uses
+  -> how do i return the key? (SOLVED, ASYMMETRIC ENCRYPTION)
+ - can join rooms with any username
+ - could add text colouring optionally
+ - how to send requests with c++? do i need c++ or can i just use python (use python)
+
+each user has private key that is accessible to anyone, and rooms are just a medium to access other users
+can have dms too...
+
+TODO:
+upload to github
+blocking people
+migrate to czy6
+now can work on frontend
+
+DONE:
+registering users (backend) (test)
+NEW PROBLEM: RSA cant rencrypt large string, how fix? - can use another encryption method and encrypt the keys, or add message lerngth limit
+OKY ABOVE ALMOST OK, BUT WEIRD NUMBER, CHECK IF ITS THE SAME ACROSS ALLO PLATFORM, CAN TRY ON REPLIT
+how do groups work (backend)
+sending messages (backend) - how does this work? groups... (TEST)
+retrieving messages (backend) (test again now with messages)
+joining gorups(backend) (TEST)
+test sending messages in groups (backend)
+test on pythonanywhere.com
+logging out (test)
+change groups shit to sets
+leaivng group
+
+===========================
+BIG NOTE: for verifying messages and retrieving messages, can use 2 step, first step generate secret code with public key, send to client, then
+client decode it and return it back, if correct then passed, and reset the code (code must be very long, 2048 bits or something?), one wrong code and reset code and just return wrong code
+ADDON: can periodically reset all codes, like every 5 min
+OK DONE
+===========================
+
+backend:
+ - server
+ - keys
+...
+
+frontend:
+ to be decided
