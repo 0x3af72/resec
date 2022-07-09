@@ -8,3 +8,5 @@ SEND_MESSAGE_FORM = {
 JOIN_GROUP_FORM = {"username": str, "verification": str, "groupname": str}
 LOGOUT_FORM = {"username": str, "verification": str}
 LEAVE_GROUP_FORM = {"username": str, "verification": str, "groupname": str}
+BLOCK_FORM = {"username": str, "verification": str, "blocked": str}
+UNBLOCK_FORM = {"username": str, "verification": str, "blocked": str}

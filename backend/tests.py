@@ -15,6 +15,8 @@ SEND_MESSAGE_URL = "/send_message"
 JOIN_GROUP_URL = "/join_group"
 LOGOUT_URL = "/logout"
 LEAVE_GROUP_URL = "/leave_group"
+BLOCK_USER_URL = "/block_user"
+UNBLOCK_USER_URL = "/unblock_user"
 
 # RIght now just putting everything into functions so easier to test
 
@@ -78,6 +80,20 @@ def leave_group(username, groupname, priv):
     r = post(base_url + LEAVE_GROUP_URL, json=LEAVE_GROUP_DATA, headers=headers)
     print("keave group" + (" success" if r.json()["data"] else " fail"))
 
+def block_user(username, blocked, priv):
+    BLOCK_USER_DATA = {
+        "username": username, "blocked": blocked, "verification": get_vcode(username, priv)
+    }
+    r = post(base_url + BLOCK_USER_URL, json=BLOCK_USER_DATA, headers=headers)
+    print("blocked" if r.json()["data"] else "fail")
+
+def unblock_user(username, blocked, priv):
+    UNBLOCK_USER_DATA = {
+        "username": username, "blocked": blocked, "verification": get_vcode(username, priv)
+    }
+    r = post(base_url + UNBLOCK_USER_URL, json=UNBLOCK_USER_DATA, headers=headers)
+    print("unblocked" if r.json()["data"] else "fail")
+
 john = register("john")
 doe = register("doe")
 tom = register("tom")
@@ -95,3 +111,7 @@ doe_messages = retrieve_messages("doe", doe)
 print(doe_messages)
 tom_messages = retrieve_messages("tom", tom)
 print(tom_messages)
+
+block_user("john", "doe", john)
+unblock_user("john", "doe", john)
+send_message("doe", "john", False, "hello", doe)

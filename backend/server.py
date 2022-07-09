@@ -42,10 +42,11 @@ def register():
         if not c in USERNAME_CHARS:
             return INVALID_USERNAME
 
-    # register user, and return private key
+    # register user, add blocked list, and return private key
     priv, pub = keys.get_keyobjects() # real keys
     priv_ser, pub_ser = keys.get_priv(priv), keys.get_pub(pub)
     users.users[username] = users.USER(pub_ser)
+    users.blocks[username] = set()
     return {
         "code": 200,
         "data": priv_ser.decode(), # returned in string form
@@ -138,6 +139,12 @@ def send_message():
                 keys.get_encrypted(contents["message"], u_pub),
             ))
     else: # just send normally without groups
+
+        # check if recipient is blocked or blocked by recipient
+        if recipient in users.blocks[username]:
+            return BLOCKED_BY_RECIPIENT
+        if username in users.blocks[recipient]:
+            return ALREADY_BLOCKED
     
         # get public keys of recipient and sender
         s_pub = keys.get_pubobject(users.users[username].pub_ser)
@@ -152,7 +159,7 @@ def send_message():
             users.SENDER(username, False),
             keys.get_encrypted(contents["message"], r_pub),
         ))
-
+        
     return {
         "code": 200,
         "data": True,
@@ -216,6 +223,7 @@ def logout():
     for group in users.users[username].groups:
         users.groups[group].remove(username)
     del users.users[username]
+    del users.blocks[username]
 
     return {
         "code": 200,
@@ -247,6 +255,72 @@ def leave_group():
     # leave group
     users.groups[groupname].remove(username)
     users.users[username].groups.remove(groupname)
+
+    return {
+        "code": 200,
+        "data": True,
+    }
+
+@app.route("/block_user/", methods=["POST"])
+def block_user():
+
+    if not JSON_CHECK(): return INVALID_REQUEST_TYPE
+    contents = request.get_json()
+    if not verify_form(contents, BLOCK_FORM):
+        return MALFORMED_DICT
+    username = contents["username"]
+    blocked = contents["blocked"]
+
+    # check if username or blocked does not exist
+    if not username in users.users:
+        return NONEXISTENT_USERNAME
+    if not blocked in users.users:
+        return NONEXISTENT_RECIPIENT
+    
+    # verify user's identy
+    if not users.users[username].verify(contents["verification"]):
+        return INCORRECT_VERIFICATION_CODE
+
+    # check if already blocked
+    if blocked in users.users[username].blocked:
+        return ALREADY_BLOCKED
+
+    # block user
+    users.users[username].blocked.add(blocked)
+    users.blocks[blocked].add(username)
+
+    return {
+        "code": 200,
+        "data": True,
+    }
+
+@app.route("/unblock_user/", methods=["POST"])
+def unblock_user():
+
+    if not JSON_CHECK(): return INVALID_REQUEST_TYPE
+    contents = request.get_json()
+    if not verify_form(contents, UNBLOCK_FORM):
+        return MALFORMED_DICT
+    username = contents["username"]
+    blocked = contents["blocked"]
+
+    # check if username or blocked does not exist
+    if not username in users.users:
+        return NONEXISTENT_USERNAME
+    if not blocked in users.users:
+        return NONEXISTENT_RECIPIENT
+    
+    # verify user's identy
+    if not users.users[username].verify(contents["verification"]):
+        return INCORRECT_VERIFICATION_CODE
+
+    # check if already blocked
+    if not blocked in users.users[username].blocked:
+        return NOT_BLOCKED
+
+    # block user
+    users.users[username].blocked.remove(blocked)
+    users.blocks[blocked].remove(username)
 
     return {
         "code": 200,

@@ -25,8 +25,9 @@ class USER:
     def __init__(self, pub_ser: bytes) -> None:
         self.pub_ser: bytes = pub_ser
         self.messages: List[Tuple[SENDER, bytes]] = []
-        self.groups = set() # efficient way to find groups
+        self.groups: Set[str] = set() # efficient way to find groups
         self.next_auto_reset: int = 0 # next auto reset in MINUTES
+        self.blocked: Set[str] = set() # users blocked by this user
         self._reset_code()
 
     def _reset_code(self):
@@ -47,6 +48,10 @@ users: Dict[str, USER] = {}
 # list of groups, for privacy random characters are advised (kind of like a code)
 # values are only list of usernames in the group
 groups: Dict[str, Set[str]] = {}
+
+# dict of users blocked by other users
+# {"a": ["b", "c"]}: a is blocked by users b and c
+blocks: Dict[str, Set[str]] = {}
 
 # thread to constantly reset codes
 def auto_reset_thread():
