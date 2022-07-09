@@ -327,4 +327,4 @@ def unblock_user():
         "data": True,
     }
 
-app.run() # when deploying on pythonanywhere, remove this, and force https
+app.run(host="0.0.0.0", port="5000") # when deploying on pythonanywhere, remove this, and force https
