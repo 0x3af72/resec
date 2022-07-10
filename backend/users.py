@@ -1,6 +1,6 @@
 import time
 import threading
-from typing import Dict, List, Tuple, Set
+from typing import Dict, List, Tuple, Set, Union
 from random import choice
 from string import ascii_letters, digits
 
@@ -9,26 +9,25 @@ import keys
 FROM_CHARS = ascii_letters + digits
 AUTO_RESET_DURATION = 2
 
-# sender struct, whether message coming from group or dm
-class SENDER:
-
-    # initialize sender given name and groupname, and bool deciding whether message is from group
-    def __init__(self, sender: str, group: bool, groupname: str="") -> None:
-        self.sender = sender
-        self.group = group
-        self.groupname = groupname # can use this when it comes from gorup
-
 # user struct to hold user data
 class USER:
 
     # initialize user given serialized public key
     def __init__(self, pub_ser: bytes) -> None:
         self.pub_ser: bytes = pub_ser
-        self.messages: List[Tuple[SENDER, bytes]] = []
-        self.groups: Set[str] = set() # efficient way to find groups
+
+        # dictionary of contacts and messages (this is for direct messages)
+        # bool represents whether the user sent it or received it
+        self.contacts: Dict[str, List[Tuple[bool, bytes]]] = {}
+
+        # dictionary of groups and messages (this is for group messages)
+        self.groups: Dict[str, List[Tuple[str, bytes]]] = {}
+
         self.next_auto_reset: int = 0 # next auto reset in MINUTES
         self.blocked: Set[str] = set() # users blocked by this user
         self._reset_code()
+        # self.messages: List[Tuple[SENDER, bytes]] = []
+        # self.groups: Set[str] = set() # efficient way to find groups
 
     def _reset_code(self):
         self.code: str = "".join(choice(FROM_CHARS) for i in range(2048))

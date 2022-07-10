@@ -95,6 +95,7 @@ def retrieve_messages():
     if not verify_form(contents, RETRIEVE_MESSAGES_FORM):
         return MALFORMED_DICT
     username = contents["username"]
+    channel = contents["channel"]
 
     # check if username does not exist
     if not username in users.users:
@@ -104,15 +105,30 @@ def retrieve_messages():
     if not users.users[username].verify(contents["verification"]):
         return INCORRECT_VERIFICATION_CODE
 
-    # return messages
-    returned: List[
-        Tuple[Dict[str, Union[str, bool]], str]
-    ] = []
-    for sender, mcontent in users.users[username].messages:
-        returned.append((
-            {"sender": sender.sender, "group": sender.group, "groupname": sender.groupname},
-            base64.b64encode(mcontent).decode(),
-        ))
+    # return messages in group
+    if contents["group"]:
+        
+        # check if not in group
+        if not channel in users.users[username].groups:
+            return INVALID_GROUP
+
+        returned: List[Tuple[str, str]] = [
+            (sender, base64.b64encode(mcontent).decode())
+            for sender, mcontent in users.users[username].groups[channel]
+        ]
+
+    # return messages in dm
+    else:
+        
+        # check if not in contacts
+        if not channel in users.users[username].contacts:
+            return INVALID_CONTACT
+
+        returned: List[Tuple[str, str]] = [
+            (username if sender else channel, base64.b64encode(mcontent).decode())
+            for sender, mcontent in users.users[username].contacts[channel]
+        ]
+
     return {
         "code": 200,
         "data": json.dumps(returned),
@@ -150,8 +166,8 @@ def send_message():
             u_pub = keys.get_pubobject(users.users[u_recipient].pub_ser)
 
             # send message
-            users.users[u_recipient].messages.append((
-                users.SENDER(username, True, recipient),
+            users.users[u_recipient].groups[recipient].append((
+                username,
                 keys.get_encrypted(contents["message"], u_pub),
             ))
     else: # just send normally without groups
@@ -165,14 +181,20 @@ def send_message():
         # get public keys of recipient and sender
         s_pub = keys.get_pubobject(users.users[username].pub_ser)
         r_pub = keys.get_pubobject(users.users[recipient].pub_ser)
+
+        # check if both not mutual contacts
+        if not recipient in users.users[username].contacts:
+            users.users[username].contacts[recipient] = []
+        if not username in users.users[recipient].contacts:
+            users.users[recipient].contacts[username] = []
         
         # send to sender and recipient
-        users.users[username].messages.append((
-            users.SENDER(username, False),
+        users.users[username].contacts[recipient].append((
+            True, # yes, sender sent this message
             keys.get_encrypted(contents["message"], s_pub),
         ))
-        users.users[recipient].messages.append((
-            users.SENDER(username, False),
+        users.users[recipient].contacts[username].append((
+            False, # no, recipient didnt send this message
             keys.get_encrypted(contents["message"], r_pub),
         ))
         
@@ -212,7 +234,7 @@ def join_group():
     if not groupname in users.groups:
         users.groups[groupname] = set()
     users.groups[groupname].add(username)
-    users.users[username].groups.add(groupname)
+    users.users[username].groups[groupname] = []
     return {
         "code": 200,
         "data": True,
@@ -270,7 +292,7 @@ def leave_group():
 
     # leave group
     users.groups[groupname].remove(username)
-    users.users[username].groups.remove(groupname)
+    del users.users[username].groups[groupname]
 
     return {
         "code": 200,
@@ -301,9 +323,10 @@ def block_user():
     if blocked in users.users[username].blocked:
         return ALREADY_BLOCKED
 
-    # block user
+    # block user, remove from contacts
     users.users[username].blocked.add(blocked)
     users.blocks[blocked].add(username)
+    users.users[username].contacts.pop(blocked, None)
 
     return {
         "code": 200,
@@ -341,6 +364,34 @@ def unblock_user():
     return {
         "code": 200,
         "data": True,
+    }
+
+@app.route("/retrieve_contacts/", methods=["POST"])
+def retrieve_contacts():
+
+    if not JSON_CHECK(): return INVALID_REQUEST_TYPE
+    contents = request.get_json()
+    if not verify_form(contents, RETRIEVE_CONTACTS_FORM):
+        return MALFORMED_DICT
+    username = contents["username"]
+
+    # check if username does not exist
+    if not username in users.users:
+        return NONEXISTENT_USERNAME
+
+    # verify user's identity
+    if not users.users[username].verify(contents["verification"]):
+        return INCORRECT_VERIFICATION_CODE
+
+    # get all contacts and return
+    # bool is true if is group, else false
+    contacts: List[Tuple[str, bool]] = [
+        *[(dm, False) for dm in users.users[username].contacts],
+        *[(group, True) for group in users.users[username].groups],
+    ]
+    return {
+        "code": 200,
+        "data": contacts
     }
 
 app.run(host="0.0.0.0", port="5000") # when deploying on pythonanywhere, remove this, and force https

@@ -17,6 +17,7 @@ LOGOUT_URL = "/logout"
 LEAVE_GROUP_URL = "/leave_group"
 BLOCK_USER_URL = "/block_user"
 UNBLOCK_USER_URL = "/unblock_user"
+RETRIEVE_CONTACTS_URL = "/retrieve_contacts"
 
 # RIght now just putting everything into functions so easier to test
 
@@ -38,9 +39,9 @@ def get_vcode(username, priv):
     code_raw = get_decrypted(code_encrypted, priv)
     return code_raw
 
-def retrieve_messages(username, priv):
+def retrieve_messages(username, channel, group, priv):
     RETRIEVE_MESSAGES_DATA = {
-        "username": username,
+        "username": username, "group": group, "channel": channel
     }
     RETRIEVE_MESSAGES_DATA["verification"] = get_vcode(username, priv)
     r = post(base_url + RETRIEVE_MESSAGES_URL, json=RETRIEVE_MESSAGES_DATA, headers=headers)
@@ -56,7 +57,6 @@ def send_message(username, recipient, group, message, priv):
         "group": group, "message": message,
     }
     r = post(base_url + SEND_MESSAGE_URL, json=SEND_MESSAGE_DATA, headers=headers)
-    print(r.json())
     print("message send" + (" success" if r.json()["data"] else " fail"))
 
 def join_group(username, groupname, priv):
@@ -94,6 +94,13 @@ def unblock_user(username, blocked, priv):
     r = post(base_url + UNBLOCK_USER_URL, json=UNBLOCK_USER_DATA, headers=headers)
     print("unblocked" if r.json()["data"] else "fail")
 
+def retrieve_contacts(username, priv):
+    RETRIEVE_CONTACTS_DATA = {
+        "username": username, "verification": get_vcode(username, priv)
+    }
+    r = post(base_url + RETRIEVE_CONTACTS_URL, json=RETRIEVE_CONTACTS_DATA, headers=headers)
+    print(r.json()["data"])
+
 john = register("john")
 doe = register("doe")
 tom = register("tom")
@@ -102,16 +109,29 @@ join_group("john", "hello", john)
 join_group("doe", "hello", doe)
 join_group("tom", "hello", tom)
 # logout("tom", tom)
-leave_group("tom", "hello", tom)
+# leave_group("tom", "hello", tom)
 
-send_message("john", "hello", True, "testn", john)
+# send_message("john", "hello", True, "testn", john)
 # john_messages = retrieve_messages("john", john)
 # print(john_messages)
-doe_messages = retrieve_messages("doe", doe)
-print(doe_messages)
-tom_messages = retrieve_messages("tom", tom)
-print(tom_messages)
+# doe_messages = retrieve_messages("doe", "hello", True, doe)
+# print(doe_messages)
+# tom_messages = retrieve_messages("tom", "hello", True, tom)
+# print(tom_messages)
 
-block_user("john", "doe", john)
-unblock_user("john", "doe", john)
-send_message("doe", "john", False, "hello", doe)
+# block_user("john", "doe", john)
+# unblock_user("john", "doe", john)
+# send_message("doe", "john", False, "hello", doe)
+
+send_message("john", "hello", True, "group send test", john)
+print(retrieve_messages("john", "hello", True, john))
+print(retrieve_messages("doe", "hello", True, doe))
+print(retrieve_messages("tom", "hello", True, tom))
+
+send_message("john", "doe", False, "dm test", john)
+print(retrieve_messages("john", "doe", False, john))
+print(retrieve_messages("doe", "john", False, doe))
+
+retrieve_contacts("john", john)
+retrieve_contacts("doe", doe)
+retrieve_contacts("tom", tom)

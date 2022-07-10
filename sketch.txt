@@ -9,7 +9,8 @@ each user has private key that is accessible to anyone, and rooms are just a med
 can have dms too...
 
 TODO:
-generic functions like showing all people in the group etc
+test edge cases for receive and send messages? just to be sure
+show people in group
 migrate to czy6
 now can work on frontend
 
@@ -30,6 +31,12 @@ upload to github
 blocking people
 unblocking people
 testing blocking and unblocking
+reworking messaging
+when blocked, remove from contacts
+show all contacted (look through messages, and add groups), return name and whether is group or not, if group can add other members
+retrieve message rework based on a channel
+testing: update retrieve message fields, then test with showing contacts and then showing messages in channel.
+test contacts: show contacts, and then open desired channel and show stuff.
 
 ===========================
 BIG NOTE: for verifying messages and retrieving messages, can use 2 step, first step generate secret code with public key, send to client, then
