@@ -29,7 +29,7 @@ class USER:
         # self.messages: List[Tuple[SENDER, bytes]] = []
         # self.groups: Set[str] = set() # efficient way to find groups
 
-    def _reset_code(self):
+    def _reset_code(self) -> None:
         self.code: str = "".join(choice(FROM_CHARS) for i in range(2048))
         self.code_enc: bytes = keys.get_encrypted(self.code, keys.get_pubobject(self.pub_ser))
         self.next_auto_reset = AUTO_RESET_DURATION

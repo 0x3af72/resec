@@ -4,7 +4,8 @@ import json
 import base64
 
 # setup
-base_url = "http://127.0.0.1:5000"
+base_url = "http://192.168.1.7:5000"
+base_url = "https://czy6.pythonanywhere.com"
 headers = {"Content-Type": "application/json; charset=UTF-8"}
 
 # test urls
@@ -18,6 +19,7 @@ LEAVE_GROUP_URL = "/leave_group"
 BLOCK_USER_URL = "/block_user"
 UNBLOCK_USER_URL = "/unblock_user"
 RETRIEVE_CONTACTS_URL = "/retrieve_contacts"
+GROUP_MEMBERS_URL = "/group_members"
 
 # RIght now just putting everything into functions so easier to test
 
@@ -101,6 +103,14 @@ def retrieve_contacts(username, priv):
     r = post(base_url + RETRIEVE_CONTACTS_URL, json=RETRIEVE_CONTACTS_DATA, headers=headers)
     print(r.json()["data"])
 
+def group_members(username, groupname, priv):
+    GROUP_MEMBERS_DATA = {
+        "username": username, "groupname": groupname, "verification": get_vcode(username, priv)
+    }
+    r = post(base_url + GROUP_MEMBERS_URL, json=GROUP_MEMBERS_DATA, headers=headers)
+    print(r.json())
+    print(r.json()["data"])
+
 john = register("john")
 doe = register("doe")
 tom = register("tom")
@@ -135,3 +145,6 @@ print(retrieve_messages("doe", "john", False, doe))
 retrieve_contacts("john", john)
 retrieve_contacts("doe", doe)
 retrieve_contacts("tom", tom)
+
+# leave_group("john", "hello", john)
+group_members("john", "hello", john)
