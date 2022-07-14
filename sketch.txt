@@ -9,7 +9,9 @@ each user has private key that is accessible to anyone, and rooms are just a med
 can have dms too...
 
 TODO:
-add todo for frontend
+get vcode how report error from inside the other funcs that call it?
+tidy funcs from test into frontend - account for errors and all tat shit
+add todo
 
 DONE:
 registering users (backend) (test)
