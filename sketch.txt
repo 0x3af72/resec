@@ -11,6 +11,7 @@ can have dms too...
 TODO:
 get vcode how report error from inside the other funcs that call it?
 tidy funcs from test into frontend - account for errors and all tat shit
+and then test all of those shit
 add todo
 
 DONE:

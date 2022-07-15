@@ -26,10 +26,10 @@ GROUP_MEMBERS_URL = "/group_members"
 # object returned from api call
 class API_RESPONSE:
     
-    # initialize api response given whether successful, error code and returned data
-    def __init__(self, success: bool, error_code: str, data: Any) -> None:
+    # initialize api response given whether successful, error message and returned data
+    def __init__(self, success: bool, error_message: str, data: Any) -> None:
         self.success = success
-        self.error_code = error_code
+        self.error_message = error_message
         self.data = data
 
     # quick check whether successful
@@ -53,10 +53,10 @@ def register(username: str) -> API_RESPONSE:
         "username": username,
     })
 
-    if resp["code"] == 200:
-        priv_ser = resp["data"]
-        return API_RESPONSE(True, "", get_privobject(priv_ser.encode()))
-    return API_RESPONSE(False, resp["error"])
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    priv_ser = resp["data"]
+    return API_RESPONSE(True, "", get_privobject(priv_ser.encode()))
 
 def get_vcode(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
 
@@ -64,25 +64,36 @@ def get_vcode(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
         "username": username,
     })
 
-    if resp["code"] == 200:
-        e_code = base64.b64decode(resp["data"])
-        return API_RESPONSE(True, "", get_decrypted(e_code, priv))
-    return API_RESPONSE(False, resp["error"])
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    e_code = base64.b64decode(resp["data"])
+    return API_RESPONSE(True, "", get_decrypted(e_code, priv))
 
-# REPORT ERROR WHEN VCODE WRONG... HOW?
-def retrieve_messages(username, channel, group, priv):
+def retrieve_messages(username: str, priv: rsa.RSAPrivateKey, channel: str, group: bool):
+    POST_DICT = {
+        "username": username,
+        "group": group,
+        "channel": channel,
+    }
+
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
     
-    resp = POST(RETRIEVE_MESSAGES_URL, {
-        "username": username, "group": group, "channel": channel,
-        "verification": get_vcode(username, priv).data
-    })
-    # r = post(base_url + RETRIEVE_MESSAGES_URL, json=RETRIEVE_MESSAGES_DATA, headers=headers)
-    # messages = [
-    #     (sender, get_decrypted(base64.b64decode(message), priv))
-    #     for sender, message in json.loads(r.json()["data"])
-    # ]
-    # return messages
+    resp = POST(RETRIEVE_MESSAGES_URL, POST_DICT)
 
+    if resp["code"] != 200:
+        print(resp["error"])
+        return API_RESPONSE(False, resp["error"], None)
+    messages = [
+        (sender, get_decrypted(base64.b64decode(message), priv))
+        for sender, message in json.loads(resp["data"])
+    ]
+    return API_RESPONSE(True, "", messages)
+
+# WORKING ON THIS NOW...
 def send_message(username, recipient, group, message, priv):
     SEND_MESSAGE_DATA = {
         "username": username, "verification": get_vcode(username, priv).data, "recipient": recipient,
@@ -164,13 +175,10 @@ join_group("tom", "hello", tom)
 # send_message("doe", "john", False, "hello", doe)
 
 send_message("john", "hello", True, "group send test", john)
-print(retrieve_messages("john", "hello", True, john))
-print(retrieve_messages("doe", "hello", True, doe))
-print(retrieve_messages("tom", "hello", True, tom))
+print(retrieve_messages("john", john, "hello", True).data)
 
 send_message("john", "doe", False, "dm test", john)
-print(retrieve_messages("john", "doe", False, john))
-print(retrieve_messages("doe", "john", False, doe))
+print(retrieve_messages("doe", doe, "hello", True).data)
 
 retrieve_contacts("john", john)
 retrieve_contacts("doe", doe)
