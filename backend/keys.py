@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# For all RSA things.
+#
+####################################################################################
+
 from typing import Tuple
 
 from cryptography.hazmat.backends import default_backend

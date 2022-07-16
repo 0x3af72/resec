@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# This is an exact copy of the keys.py used in the backend.
+#
+####################################################################################
+
 from typing import Tuple
 
 from cryptography.hazmat.backends import default_backend

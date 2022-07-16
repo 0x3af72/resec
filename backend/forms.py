@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# Forms - for type checking json data sent from client.
+#
+####################################################################################
+
 REGISTER_FORM = {"username": str}
 VERIFICATION_CODE_FORM = {"username": str}
 RETRIEVE_MESSAGES_FORM = {"username": str, "verification": str, "channel": str, "group": bool}

@@ -9,10 +9,7 @@ each user has private key that is accessible to anyone, and rooms are just a med
 can have dms too...
 
 TODO:
-get vcode how report error from inside the other funcs that call it?
-tidy funcs from test into frontend - account for errors and all tat shit
-and then test all of those shit
-add todo
+client.py to interact with api.py and pretty print stuff.
 
 DONE:
 registering users (backend) (test)
@@ -42,6 +39,8 @@ rate limit - max 10 request per second
 test edge cases for receive and send messages? just to be sure
 show people in group
 migrate to czy6
+get vcode how report error from inside the other funcs that call it? - also have t
+tidy funcs from test into frontend - account for errors and all tat shit, and also update test cases along the way
 
 ===========================
 BIG NOTE: for verifying messages and retrieving messages, can use 2 step, first step generate secret code with public key, send to client, then

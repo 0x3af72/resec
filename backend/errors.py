@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# Just some error messages here.
+#
+####################################################################################
+
 # verify dictionary contents
 def verify_form(contents: dict, form: dict) -> bool:
     for key in form:

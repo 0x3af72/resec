@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# Some testcases. Client's api.py is just a modified version of this.
+#
+####################################################################################
+
 from requests import post
 from keys import *
 import json

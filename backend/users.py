@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# For managing users and groups.
+#
+####################################################################################
+
 import time
 import threading
 from typing import Dict, List, Tuple, Set, Union
@@ -26,8 +33,6 @@ class USER:
         self.next_auto_reset: int = 0 # next auto reset in MINUTES
         self.blocked: Set[str] = set() # users blocked by this user
         self._reset_code()
-        # self.messages: List[Tuple[SENDER, bytes]] = []
-        # self.groups: Set[str] = set() # efficient way to find groups
 
     def _reset_code(self) -> None:
         self.code: str = "".join(choice(FROM_CHARS) for i in range(2048))

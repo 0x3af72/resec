@@ -1,3 +1,10 @@
+####################################################################################
+#
+# Written by cry6.
+# Quick remark: The code here is horrendous.
+#
+####################################################################################
+
 import json
 import base64
 from typing import Any
@@ -45,21 +52,8 @@ def POST(path: str, json: Any) -> Any:
     )
     return resp.json()
 
-# api functions to be called from main script
-
-def register(username: str) -> API_RESPONSE:
-
-    resp = POST(REGISTER_URL, {
-        "username": username,
-    })
-
-    if resp["code"] != 200:
-        return API_RESPONSE(False, resp["error"], None)
-    priv_ser = resp["data"]
-    return API_RESPONSE(True, "", get_privobject(priv_ser.encode()))
-
+# verification code function
 def get_vcode(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
-
     resp = POST(VERIFICATION_CODE_URL, {
         "username": username,
     })
@@ -69,7 +63,16 @@ def get_vcode(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
     e_code = base64.b64decode(resp["data"])
     return API_RESPONSE(True, "", get_decrypted(e_code, priv))
 
-def retrieve_messages(username: str, priv: rsa.RSAPrivateKey, channel: str, group: bool):
+# api functions to be called from main script
+def register(username: str) -> API_RESPONSE:
+    resp = POST(REGISTER_URL, {"username": username,})
+
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    priv_ser = resp["data"]
+    return API_RESPONSE(True, "", get_privobject(priv_ser.encode()))
+
+def retrieve_messages(username: str, priv: rsa.RSAPrivateKey, channel: str, group: bool) -> API_RESPONSE:
     POST_DICT = {
         "username": username,
         "group": group,
@@ -85,7 +88,6 @@ def retrieve_messages(username: str, priv: rsa.RSAPrivateKey, channel: str, grou
     resp = POST(RETRIEVE_MESSAGES_URL, POST_DICT)
 
     if resp["code"] != 200:
-        print(resp["error"])
         return API_RESPONSE(False, resp["error"], None)
     messages = [
         (sender, get_decrypted(base64.b64decode(message), priv))
@@ -93,96 +95,158 @@ def retrieve_messages(username: str, priv: rsa.RSAPrivateKey, channel: str, grou
     ]
     return API_RESPONSE(True, "", messages)
 
-# WORKING ON THIS NOW...
-def send_message(username, recipient, group, message, priv):
-    SEND_MESSAGE_DATA = {
-        "username": username, "verification": get_vcode(username, priv).data, "recipient": recipient,
+def send_message(username: str, priv: rsa.RSAPrivateKey, recipient: str, group: bool, message: str) -> API_RESPONSE:
+    POST_DICT = {
+        "username": username, "recipient": recipient,
         "group": group, "message": message,
     }
-    r = post(base_url + SEND_MESSAGE_URL, json=SEND_MESSAGE_DATA, headers=headers)
-    print("message send" + (" success" if r.json()["data"] else " fail"))
 
-def join_group(username, groupname, priv):
-    JOIN_GROUP_DATA = {
-        "username": username, "groupname": groupname, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + JOIN_GROUP_URL, json=JOIN_GROUP_DATA, headers=headers)
-    print("join group" + (" success" if r.json()["data"] else " fail"))
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
 
-def logout(username, priv):
-    LOGOUT_DATA = {
-        "username": username, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + LOGOUT_URL, json=LOGOUT_DATA, headers=headers)
-    print("logout success" + (" success" if r.json()["data"] else " fail"))
+    resp = POST(SEND_MESSAGE_URL, POST_DICT)
 
-def leave_group(username, groupname, priv):
-    LEAVE_GROUP_DATA = {
-        "username": username, "groupname": groupname, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + LEAVE_GROUP_URL, json=LEAVE_GROUP_DATA, headers=headers)
-    print("keave group" + (" success" if r.json()["data"] else " fail"))
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
+    
+def join_group(username: str, priv: rsa.RSAPrivateKey, groupname: str) -> API_RESPONSE:
+    POST_DICT = {"username": username, "groupname": groupname}
 
-def block_user(username, blocked, priv):
-    BLOCK_USER_DATA = {
-        "username": username, "blocked": blocked, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + BLOCK_USER_URL, json=BLOCK_USER_DATA, headers=headers)
-    print("blocked" if r.json()["data"] else "fail")
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
 
-def unblock_user(username, blocked, priv):
-    UNBLOCK_USER_DATA = {
-        "username": username, "blocked": blocked, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + UNBLOCK_USER_URL, json=UNBLOCK_USER_DATA, headers=headers)
-    print("unblocked" if r.json()["data"] else "fail")
+    resp = POST(JOIN_GROUP_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
 
-def retrieve_contacts(username, priv):
-    RETRIEVE_CONTACTS_DATA = {
-        "username": username, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + RETRIEVE_CONTACTS_URL, json=RETRIEVE_CONTACTS_DATA, headers=headers)
-    print(r.json()["data"])
+def logout(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
+    POST_DICT = {"username": username}
 
-def group_members(username, groupname, priv):
-    GROUP_MEMBERS_DATA = {
-        "username": username, "groupname": groupname, "verification": get_vcode(username, priv).data
-    }
-    r = post(base_url + GROUP_MEMBERS_URL, json=GROUP_MEMBERS_DATA, headers=headers)
-    print(r.json())
-    print(r.json()["data"])
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
 
-john = register("john").data
-doe = register("doe").data
-tom = register("tom").data
+    resp = POST(LOGOUT_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
 
-join_group("john", "hello", john)
-join_group("doe", "hello", doe)
-join_group("tom", "hello", tom)
-# logout("tom", tom)
-# leave_group("tom", "hello", tom)
+def leave_group(username: str, priv: rsa.RSAPrivateKey, groupname: str) -> API_RESPONSE:
+    POST_DICT = {"username": username, "groupname": groupname}
 
-# send_message("john", "hello", True, "testn", john)
-# john_messages = retrieve_messages("john", john)
-# print(john_messages)
-# doe_messages = retrieve_messages("doe", "hello", True, doe)
-# print(doe_messages)
-# tom_messages = retrieve_messages("tom", "hello", True, tom)
-# print(tom_messages)
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
 
-# block_user("john", "doe", john)
-# unblock_user("john", "doe", john)
-# send_message("doe", "john", False, "hello", doe)
+    resp = POST(LEAVE_GROUP_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
 
-send_message("john", "hello", True, "group send test", john)
-print(retrieve_messages("john", john, "hello", True).data)
+# WORK ON THIS RN
+def block_user(username: str, priv: rsa.RSAPrivateKey, blocked: str) -> API_RESPONSE:
+    POST_DICT = {"username": username, "blocked": blocked}
 
-send_message("john", "doe", False, "dm test", john)
-print(retrieve_messages("doe", doe, "hello", True).data)
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
 
-retrieve_contacts("john", john)
-retrieve_contacts("doe", doe)
-retrieve_contacts("tom", tom)
+    resp = POST(BLOCK_USER_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
 
-# leave_group("john", "hello", john)
-group_members("john", "hello", john)
+def unblock_user(username: str, priv: rsa.RSAPrivateKey, blocked: str) -> API_RESPONSE:
+    POST_DICT = {"username": username, "blocked": blocked}
+
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
+
+    resp = POST(UNBLOCK_USER_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", None)
+
+def retrieve_contacts(username: str, priv: rsa.RSAPrivateKey) -> API_RESPONSE:
+    POST_DICT = {"username": username}
+
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
+
+    resp = POST(RETRIEVE_CONTACTS_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", resp["data"])
+
+def group_members(username: str, priv: rsa.RSAPrivateKey, groupname: str) -> API_RESPONSE:
+    POST_DICT = {"username": username, "groupname": groupname}
+
+    # get verification code: assign to the dict, return stuff if doesnt work.
+    vcode = get_vcode(username, priv)
+    if not vcode:
+        return vcode
+    POST_DICT["verification"] = vcode.data
+
+    resp = POST(GROUP_MEMBERS_URL, POST_DICT)
+    if resp["code"] != 200:
+        return API_RESPONSE(False, resp["error"], None)
+    return API_RESPONSE(True, "", resp["data"])
+
+if __name__ == "__main__":
+
+    # testing
+
+    john = register("john").data
+    doe = register("doe").data
+    tom = register("tom").data
+
+    join_group("john", john, "hello")
+    join_group("doe", doe, "hello")
+    join_group("tom", tom, "hello")
+    # logout("tom", tom)
+    # leave_group("doe", doe, "hello")
+
+    # send_message("john", "hello", True, "testn", john)
+    # john_messages = retrieve_messages("john", john)
+    # print(john_messages)
+    # doe_messages = retrieve_messages("doe", "hello", True, doe)
+    # print(doe_messages)
+    # tom_messages = retrieve_messages("tom", "hello", True, tom)
+    # print(tom_messages)
+
+    # block_user("john", "doe", john)
+    # unblock_user("john", "doe", john)
+    # send_message("doe", "john", False, "hello", doe)
+
+    send_message("john", john, "hello", True, "group send test")
+    print(retrieve_messages("doe", doe, "hello", True).data)
+
+    send_message("john", john, "doe", False, "dm test")
+    print(retrieve_messages("doe", doe, "john", False).data)
+
+    print(retrieve_contacts("john", john).data)
+    print(retrieve_contacts("doe", doe).data)
+    print(retrieve_contacts("tom", tom).data)
+
+    # leave_group("john", "hello", john)
+    print(group_members("john", john, "hello").data)
